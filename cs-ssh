@@ -1,0 +1,115 @@
+#!/bin/bash
+
+LOGIN=""
+MAXUSERS=""
+PRESERVE_TMUX=0
+
+while getopts ":l:n:hp" opt; do
+        case ${opt} in
+        l )
+                LOGIN=$OPTARG
+                if [[ $LOGIN == ":" ]]; then
+                        echo "-l requires a username."
+                fi
+        ;;
+        n )
+                MAXUSERS=$OPTARG
+                if [[ $MAXUSERS == ":" ]]; then
+                        echo "-n requires a numeric argument."
+                fi
+        ;;
+        p )
+                PRESERVE_TMUX=1
+        ;;
+        h )
+                echo "Usage cs-ssh <-l username> <-n numusers> [-h]"
+                echo "Options:"
+                echo "-l <username>  Provide the username to sign in to the cs machines with"
+                echo "-n <num>       Provide the maximum number of users allowed on the cs machine you'll login to"
+                echo "-p             Preserve Tmux session; sign into the same machine this script signed into last"
+                echo "-h             Prints this help message"
+        ;;
+        esac
+done
+shift $((OPTIND - 1))
+
+servers="kinks
+joplin
+hendrix
+beatles
+drifters
+doors
+stones
+orbison
+everlys
+elvis
+berry
+achilles
+odysseus
+agamemnon
+heracles
+rhea
+dione
+prometheus
+oedipus
+perseus
+andromeda
+gorgon
+medusa
+siren
+pegasus
+styx
+minotaur
+orion
+bolina
+icarus
+marillion
+rush
+pinkfloyd
+genesis
+queen
+police
+ridgeway
+wallofvoodoo
+chianna
+dargo
+aeryn
+crichton
+scorpius
+nial
+rygel"
+
+chosen="none"
+
+DIR=$(dirname $(readlink -f "$0"))
+
+if [[ $LOGIN == "" ]]; then
+        printf "login: "
+        read LOGIN
+fi
+
+if [[ $PRESERVE_TMUX -eq 0 ]]
+then
+	for serv in $servers
+	do
+		echo "Trying $serv"
+		temp=`ssh -o ConnectTimeout=4 "$LOGIN@$serv.cs.rit.edu" 'users | wc -w'` 
+		echo "$temp people on $serv"
+		if [[ $temp -le $maxUsers ]]
+		then
+			chosen=$serv
+			break
+		fi
+	done
+
+	if [[ $chosen != "none" ]]
+	then
+		echo $serv > "$DIR/serv.last"
+		ssh -X "$USER@$serv.cs.rit.edu"
+	else
+		echo "No server with less than $(($maxUsers+1)) users signed in"
+	fi
+else
+	temp=$(cat "$DIR/serv.last")
+	ssh -X "$LOGIN@$temp.cs.rit.edu"
+fi
